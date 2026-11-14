@@ -1,1 +1,1 @@
-{ "functions": { "api/*.js": { "maxDuration": 60 } }, "rewrites": [{ "source": "/agent", "destination": "/api/agent" }, { "source": "/check", "destination": "/api/check" }] }
+{ "functions": { "api/*.js": { "maxDuration": 60, "memory": 1769, "includeFiles": "circuits/**" } }, "rewrites": [{ "source": "/agent", "destination": "/api/agent" }, { "source": "/check", "destination": "/api/check" }] }
