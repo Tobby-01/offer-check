@@ -15,6 +15,11 @@ function findUrl(o, depth = 0) {
 }
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET' && String(req.url).includes('selftest')) {
+    const t0 = Date.now();
+    const r = await gatekeeper.respond({ task_id: 'selftest', mode: 'selftest', input: { registered_vk: '0x7d91', proof_vk: '0x7d91', minimum: '1000', public_balance: '900', expiry_block: 10, current_block: 5, recipient: '0xab', condition_recipient: '0xab', amount: '1', max_transfer: '2', proof_tx: '0x' + Date.now().toString(16) } });
+    return res.status(200).json({ decision: r.decision, reason_code: r.reason_code, proved: !!r.proof, ms: Date.now() - t0 });
+  }
   if (req.method === 'GET') return res.status(200).json({ ok: true, agent: 'offer-check', protocolVersion: 'v1', usage: 'POST signed tasks here. Public demo: /api/check?url=' });
   if (req.method !== 'POST') return res.status(405).end();
   const raw = await readRaw(req);
@@ -30,7 +35,7 @@ module.exports = async (req, res) => {
   let task; try { task = JSON.parse(raw.toString('utf8')); } catch { return send(400, { ok: false, error: 'BAD_JSON' }, v); }
   const type = String(task.type || '');
   if (type.includes('preflight')) return send(200, { ok: true, protocolVersion: 'v1' }, v);
-  if (type.includes('proof-gatekeeper')) { try { return send(200, gatekeeper.respond(task), v); } catch { return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'PROOF_INVALID' }, v); } }
+  if (type.includes('proof-gatekeeper')) { try { return send(200, await gatekeeper.respond(task), v); } catch { return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'PROOF_INVALID' }, v); } }
   const url = findUrl(task.input || task);
   if (!url) return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'NO_URL_IN_TASK', protocolVersion: 'v1' }, v);
   try {
