@@ -1,0 +1,1 @@
+{ "functions": { "api/*.js": { "maxDuration": 60 } }, "rewrites": [{ "source": "/agent", "destination": "/api/agent" }, { "source": "/check", "destination": "/api/check" }] }
