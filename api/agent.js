@@ -2,6 +2,7 @@
 // and runs Offer Check for any task that carries a URL. Fails closed.
 const { verify, sign, secrets } = require('../lib/hmac');
 const { check } = require('../lib/check');
+const gatekeeper = require('../lib/gatekeeper');
 
 const readRaw = req => new Promise((ok, no) => { const c = []; req.on('data', d => c.push(d)); req.on('end', () => ok(Buffer.concat(c))); req.on('error', no); });
 function findUrl(o, depth = 0) {
@@ -29,6 +30,7 @@ module.exports = async (req, res) => {
   let task; try { task = JSON.parse(raw.toString('utf8')); } catch { return send(400, { ok: false, error: 'BAD_JSON' }, v); }
   const type = String(task.type || '');
   if (type.includes('preflight')) return send(200, { ok: true, protocolVersion: 'v1' }, v);
+  if (type.includes('proof-gatekeeper')) { try { return send(200, gatekeeper.respond(task), v); } catch { return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'PROOF_INVALID' }, v); } }
   const url = findUrl(task.input || task);
   if (!url) return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'NO_URL_IN_TASK', protocolVersion: 'v1' }, v);
   try {
