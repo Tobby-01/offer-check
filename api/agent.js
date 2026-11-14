@@ -16,6 +16,11 @@ function findUrl(o, depth = 0) {
 }
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET' && String(req.url).includes('vfytest')) {
+    const t0 = Date.now();
+    const r = await vfy.respond({ matchId: '00000000-0000-4000-8000-000000000001', turn: 1, mode: 'selftest', state: { selfBalance: '100', opponentBalance: '100' } });
+    return res.status(200).json({ action: r.action, proved: !!r.policyProof.proof, signals: (r.policyProof.public_signals || []).length, ms: Date.now() - t0 });
+  }
   if (req.method === 'GET' && String(req.url).includes('selftest')) {
     const t0 = Date.now();
     const r = await gatekeeper.respond({ task_id: 'selftest', mode: 'selftest', input: { registered_vk: '0x7d91', proof_vk: '0x7d91', minimum: '1000', public_balance: '900', expiry_block: 10, current_block: 5, recipient: '0xab', condition_recipient: '0xab', amount: '1', max_transfer: '2', proof_tx: '0x' + Date.now().toString(16) } });
@@ -38,7 +43,7 @@ module.exports = async (req, res) => {
   if (type.includes('preflight')) return send(200, { ok: true, protocolVersion: 'v1' }, v);
   const ev = String(task.eventId || '');
   if (ev.includes('steal') || type.includes('steal') || (task.matchId && task.turn !== undefined)) {
-    try { return send(200, vfy.respond(task), v); }
+    try { return send(200, await vfy.respond(task), v); }
     catch { return send(200, { matchId: String(task.matchId), turn: Number(task.turn), action: { type: 'HOLD' }, policyProof: { circuitVersion: 'v1' }, agentTimestamp: new Date().toISOString(), idempotencyKey: require('crypto').randomUUID() }, v); }
   }
   if (type.includes('proof-gatekeeper') || ev.includes('gatekeeper')) { try { return send(200, await gatekeeper.respond(task), v); } catch { return send(200, { task_id: task.task_id, decision: 'REJECT', reason_code: 'PROOF_INVALID' }, v); } }
